@@ -128,18 +128,17 @@ final class ClaudeService {
             return (id: id, label: name)
         }
     }
-    /// Chosen in Settings; falls back to the default when the field is left empty.
-    private var model: String {
-        let m = AppState.shared.claudeModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        return m.isEmpty ? AppState.defaultClaudeModel : m
-    }
+    /// Selection resolves blank preferences while preserving custom model IDs.
+    private var model: String { AppState.shared.chatSelection.modelID }
 
     var apiKey: String? { KeychainStore.shared.get("anthropic-api-key") }
 
     // Multi-turn conversation messages (for API)
     private var conversationMessages: [[String: Any]] = []
+    private var conversationRevision = 0
 
     func clearConversation() {
+        conversationRevision += 1
         conversationMessages = []
     }
 
@@ -162,6 +161,7 @@ final class ClaudeService {
             return
         }
 
+        let revision = conversationRevision
         // Build user content for this turn
         var userContent: [[String: Any]] = []
 
@@ -193,8 +193,10 @@ final class ClaudeService {
 
         do {
             let data = try await callAPI(body: body, key: key, beta: "web-search-2025-03-05")
+            guard revision == conversationRevision else { return }
             await handleChatResult(data, state: state)
         } catch {
+            guard revision == conversationRevision else { return }
             conversationMessages.removeLast()
             await showError(error.localizedDescription, state: state)
         }

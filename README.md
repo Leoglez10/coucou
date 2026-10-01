@@ -106,6 +106,17 @@ Click the Coucou icon in the menu bar (macOS) or in the system tray (Windows) â†
 
 If Coucou isn't running, the hook exits immediately: **Claude Code is never blocked.**
 
+### Chat provider and model (macOS)
+
+In **Settings â†’ Chat**, select **Anthropic**, save your Anthropic API key, and choose a model
+from your account's list or enter a custom model ID. Anthropic is the only implemented
+and selectable chat provider in this stage; OpenCode Go and Codex chat are not available.
+Chat does not gain terminal tools from the provider selector.
+
+Existing model preferences are kept under `claudeModel`, and the API key remains in the
+Keychain under `anthropic-api-key`. The chat keeps multi-turn history, web search, and
+file or window context on the first turn. Claude Code hooks remain a separate integration.
+
 ## Things to try
 
 | Do this | Mochi does that |

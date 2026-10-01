@@ -76,10 +76,23 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(soundEnabled, forKey: "soundEnabled") }
     }
 
-    // Claude model used by the chat and the search — persisted
-    static let defaultClaudeModel = "claude-sonnet-4-6"
-    @Published var claudeModel: String = AppState.defaultClaudeModel {
-        didSet { UserDefaults.standard.set(claudeModel, forKey: "claudeModel") }
+    // Provider selection; Anthropic retains the legacy model name and preference key.
+    static let defaultClaudeModel = ChatProviderCatalog.anthropic.defaultModelID
+    @Published private(set) var chatSelection = ChatProviderSelection()
+    var claudeModel: String {
+        get { chatSelection.modelID }
+        set {
+            chatSelection.selectModel(newValue)
+            UserDefaults.standard.set(chatSelection.modelID, forKey: chatSelection.provider.modelPreferenceKey)
+        }
+    }
+
+    func selectChatProvider(_ rawID: String) {
+        var next = chatSelection
+        guard next.selectProvider(rawID) else { return }
+        ChatService.shared.clearConversation(state: self)
+        chatSelection = next
+        UserDefaults.standard.set(next.providerID.rawValue, forKey: "chatProvider")
     }
 
     // Sound volume (0–0.2) — persisted, synced to SoundEngine
@@ -196,8 +209,10 @@ final class AppState: ObservableObject {
 
         if let v = ud.object(forKey: "soundEnabled") as? Bool   { soundEnabled = v }
         if let v = ud.object(forKey: "soundVolume")  as? Double { soundVolume  = v }
-        if let v = ud.string(forKey: "claudeModel"),
-           !v.trimmingCharacters(in: .whitespaces).isEmpty { claudeModel = v }
+        chatSelection = ChatProviderSelection(
+            providerID: ud.string(forKey: "chatProvider"),
+            modelID: ud.string(forKey: ChatProviderCatalog.anthropic.modelPreferenceKey)
+        )
         // Migrate old 60s default → 15s
         if let v = ud.object(forKey: "autoCloseInterval") as? Double {
             autoCloseInterval = (v == 60) ? 15 : v

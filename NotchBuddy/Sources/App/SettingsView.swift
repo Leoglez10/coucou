@@ -6,13 +6,10 @@ struct SettingsView: View {
     @ObservedObject private var state = AppState.shared
     @State private var apiKey: String = KeychainStore.shared.get("anthropic-api-key") ?? ""
 
-    // Claude model — dynamic list fetched from the API, static fallback if unavailable
-    private static let fallbackModels: [(id: String, label: String)] = [
-        ("claude-sonnet-4-6",         "Claude Sonnet 4.6"),
-        ("claude-sonnet-5-5",         "Claude Sonnet 5.5"),
-        ("claude-opus-5-5",           "Claude Opus 5.5"),
-        ("claude-haiku-4-5-20251001", "Claude Haiku 4.5"),
-    ]
+    // Account models when available; provider catalog is the offline fallback.
+    private static let fallbackModels = ChatProviderCatalog.anthropic.models.map {
+        (id: $0.id, label: $0.label)
+    }
     private static let customModelTag = "__custom__"
     @State private var fetchedModels: [(id: String, label: String)] = []
     @State private var modelChoice: String = {
@@ -67,10 +64,22 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
 
-                // MARK: API
-                GroupBox("Anthropic API") {
+                // MARK: Chat
+                GroupBox("Chat") {
                     VStack(alignment: .leading, spacing: 8) {
-                        SecureField("API key (sk-ant-…)", text: $apiKey)
+                        Picker("Provider", selection: Binding(
+                            get: { state.chatSelection.providerID.rawValue },
+                            set: { state.selectChatProvider($0) }
+                        )) {
+                            ForEach(ChatProviderCatalog.providers) { provider in
+                                Text(provider.label).tag(provider.id.rawValue)
+                            }
+                        }
+                        Text("Only Anthropic is available. Other chat providers are not implemented yet.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+
+                        SecureField("Anthropic API key (sk-ant-…)", text: $apiKey)
                             .textFieldStyle(.roundedBorder)
                         Button("Save") {
                             KeychainStore.shared.set("anthropic-api-key", value: apiKey)
