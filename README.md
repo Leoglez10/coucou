@@ -108,10 +108,19 @@ If Coucou isn't running, the hook exits immediately: **Claude Code is never bloc
 
 ### Chat provider and model (macOS)
 
-In **Settings → Chat**, select **Anthropic**, save your Anthropic API key, and choose a model
-from your account's list or enter a custom model ID. Anthropic is the only implemented
-and selectable chat provider in this stage; OpenCode Go and Codex chat are not available.
-Chat does not gain terminal tools from the provider selector.
+**Settings → Chat** shows the active chat provider separately from **Configure provider**.
+Browse **Anthropic**, **OpenCode Go**, or **Codex** setup without switching active chat
+or clearing its history. Only Anthropic can send chat messages.
+
+- **Anthropic:** save your API key and choose an account model or enter a custom model ID.
+- **OpenCode Go:** save a separate key in Keychain (`opencode-go-api-key`) and an optional
+  model ID in preferences (`opencodeGoModel`). “Key saved (not verified)” means storage
+  only: chat integration is not implemented. Go is intended for coding-agent usage;
+  arbitrary general chat compatibility is not guaranteed.
+- **Codex:** authentication and model areas are visible, but **Sign in with ChatGPT**
+  is disabled. Local authentication, model selection, and chat integration are not implemented.
+
+This setup adds no new transports, model discovery, login flows, or terminal tools.
 
 Existing model preferences are kept under `claudeModel`, and the API key remains in the
 Keychain under `anthropic-api-key`. The chat keeps multi-turn history, web search, and

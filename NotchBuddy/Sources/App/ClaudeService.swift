@@ -61,7 +61,7 @@ final class KeychainStore: @unchecked Sendable {
     private let lock = NSLock()
 
     private static let allKeys = [
-        "anthropic-api-key",
+        "anthropic-api-key", "opencode-go-api-key",
         "resend-api-key", "resend-from",
         "n8n-url", "n8n-api-key",
         "vercel-token",

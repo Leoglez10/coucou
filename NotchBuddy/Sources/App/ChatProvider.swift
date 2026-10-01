@@ -5,6 +5,12 @@ enum ChatProviderID: String, Sendable {
     case anthropic
 }
 
+enum ChatProviderSetupID: String, Sendable {
+    case anthropic
+    case opencodeGo = "opencode-go"
+    case codex
+}
+
 struct ChatModel: Identifiable, Sendable {
     let id: String
     let label: String
@@ -16,6 +22,24 @@ struct ChatProviderDescriptor: Identifiable, Sendable {
     let modelPreferenceKey: String
     let defaultModelID: String
     let models: [ChatModel]
+}
+
+// Setup visibility and saved configuration do not imply a working chat transport.
+struct ChatProviderSetupDescriptor: Identifiable, Sendable {
+    let id: ChatProviderSetupID
+    let label: String
+    let apiKeyKey: String?
+    let modelPreferenceKey: String?
+
+    var supportsAPIKeyConfiguration: Bool { apiKeyKey != nil }
+    var isChatImplemented: Bool {
+        ChatProviderCatalog.providers.contains { $0.id.rawValue == id.rawValue }
+    }
+
+    /// A saved key is not a verification result or a promise of chat availability.
+    func isConfigured(hasSavedKey: Bool) -> Bool {
+        supportsAPIKeyConfiguration && hasSavedKey
+    }
 }
 
 enum ChatProviderCatalog {
@@ -32,8 +56,23 @@ enum ChatProviderCatalog {
         ]
     )
 
-    // Do not list providers until a working transport is available.
+    // Only implemented transports belong in the dispatchable catalog.
     static let providers = [anthropic]
+
+    static let opencodeGoSetup = ChatProviderSetupDescriptor(
+        id: .opencodeGo, label: "OpenCode Go",
+        apiKeyKey: "opencode-go-api-key", modelPreferenceKey: "opencodeGoModel"
+    )
+    static let setupProviders = [
+        ChatProviderSetupDescriptor(
+            id: .anthropic, label: anthropic.label,
+            apiKeyKey: "anthropic-api-key", modelPreferenceKey: anthropic.modelPreferenceKey
+        ),
+        opencodeGoSetup,
+        ChatProviderSetupDescriptor(
+            id: .codex, label: "Codex", apiKeyKey: nil, modelPreferenceKey: nil
+        ),
+    ]
 
     static func resolve(_ rawID: String?) -> ChatProviderDescriptor {
         providers.first { $0.id.rawValue == rawID } ?? anthropic

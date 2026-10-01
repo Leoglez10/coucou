@@ -14,6 +14,36 @@ enum ChatProviderSelectionTests {
         check(catalog[0].modelPreferenceKey == "claudeModel", "Keep the legacy preference key")
         check(catalog[0].models.contains { $0.id == catalog[0].defaultModelID }, "Default model is listed")
 
+        let setup = ChatProviderCatalog.setupProviders
+        check(setup.map(\.id) == [.anthropic, .opencodeGo, .codex],
+              "All three providers are visible for setup")
+        check(setup.map(\.label) == ["Anthropic", "OpenCode Go", "Codex"],
+              "Setup labels identify each provider")
+        let anthropicSetup = setup[0]
+        let goSetup = setup[1]
+        let codexSetup = setup[2]
+        check(anthropicSetup.apiKeyKey == "anthropic-api-key", "Keep the legacy Anthropic key")
+        check(anthropicSetup.modelPreferenceKey == "claudeModel", "Keep the legacy model preference")
+        check(goSetup.apiKeyKey == "opencode-go-api-key", "Go has its own Keychain key")
+        check(goSetup.modelPreferenceKey == "opencodeGoModel", "Go has its own model preference")
+        check(goSetup.apiKeyKey != anthropicSetup.apiKeyKey, "Provider credentials stay independent")
+        check(goSetup.modelPreferenceKey != anthropicSetup.modelPreferenceKey,
+              "Provider model preferences stay independent")
+        check(!goSetup.isConfigured(hasSavedKey: false), "Go without a saved key is not configured")
+        check(goSetup.isConfigured(hasSavedKey: true), "A saved Go key is configuration only")
+        check(!goSetup.isChatImplemented, "Saving a Go key cannot implement a transport")
+        check(!codexSetup.supportsAPIKeyConfiguration, "Codex has no API key authentication setup")
+        check(codexSetup.apiKeyKey == nil, "Codex does not accept copied tokens as an API key")
+        check(codexSetup.modelPreferenceKey == nil, "Codex has no pretend model configuration")
+        check(!codexSetup.isConfigured(hasSavedKey: true), "Codex cannot become configured by a key")
+        check(!codexSetup.isChatImplemented, "Codex chat is not ready")
+        check(anthropicSetup.supportsAPIKeyConfiguration, "Anthropic keeps API key configuration")
+        check(anthropicSetup.isChatImplemented, "Anthropic keeps the implemented chat transport")
+        check(!anthropicSetup.isConfigured(hasSavedKey: false), "Anthropic still requires a key")
+        check(anthropicSetup.isConfigured(hasSavedKey: true), "Anthropic can save its configuration")
+        check(setup.filter(\.isChatImplemented).map { $0.id.rawValue } == catalog.map { $0.id.rawValue },
+              "Visible setup does not enlarge the dispatchable catalog")
+
         let defaults = ChatProviderSelection()
         check(defaults.providerID == .anthropic, "Anthropic is the default provider")
         check(defaults.modelID == "claude-sonnet-4-6", "Keep the existing default model")

@@ -5,6 +5,11 @@ import AppKit
 struct SettingsView: View {
     @ObservedObject private var state = AppState.shared
     @State private var apiKey: String = KeychainStore.shared.get("anthropic-api-key") ?? ""
+    // Browsing setup never calls selectChatProvider or clears the conversation.
+    @State private var setupProvider: ChatProviderSetupID = .anthropic
+    @State private var opencodeGoKey: String = KeychainStore.shared.get("opencode-go-api-key") ?? ""
+    @State private var opencodeGoKeySaved: Bool = !(KeychainStore.shared.get("opencode-go-api-key") ?? "").isEmpty
+    @AppStorage("opencodeGoModel") private var opencodeGoModel: String = ""
 
     // Account models when available; provider catalog is the offline fallback.
     private static let fallbackModels = ChatProviderCatalog.anthropic.models.map {
@@ -52,6 +57,89 @@ struct SettingsView: View {
     @State private var n8nWorkflows: [String] = []
     @State private var loadingN8n: Bool = false
 
+    private var anthropicChatSettings: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SecureField("Anthropic API key (sk-ant-…)", text: $apiKey)
+                .textFieldStyle(.roundedBorder)
+            Button("Save") {
+                KeychainStore.shared.set("anthropic-api-key", value: apiKey)
+                statusMessage = "✓ Key saved."
+            }
+            .buttonStyle(.borderedProminent)
+
+            Divider().padding(.vertical, 2)
+            Picker("Model", selection: $modelChoice) {
+                ForEach(displayModels, id: \.id) { preset in
+                    Text(preset.label).tag(preset.id)
+                }
+                Text("Custom…").tag(Self.customModelTag)
+            }
+            .onChange(of: modelChoice) { _, choice in
+                if choice != Self.customModelTag {
+                    state.claudeModel = choice
+                } else {
+                    applyCustomModel(customModel)
+                }
+            }
+            if modelChoice == Self.customModelTag {
+                TextField("Model ID (e.g. claude-sonnet-4-6)", text: $customModel)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: customModel) { _, value in applyCustomModel(value) }
+            }
+            Text("Used by the chat. The list comes from your Anthropic account.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var opencodeGoChatSettings: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SecureField("OpenCode Go API key", text: $opencodeGoKey)
+                .textFieldStyle(.roundedBorder)
+            Button("Save") {
+                KeychainStore.shared.set("opencode-go-api-key", value: opencodeGoKey)
+                opencodeGoKeySaved = true
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(opencodeGoKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Text(ChatProviderCatalog.opencodeGoSetup.isConfigured(hasSavedKey: opencodeGoKeySaved)
+                 ? "Key saved (not verified)" : "No key saved")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+
+            Divider().padding(.vertical, 2)
+            TextField("Model ID (optional)", text: $opencodeGoModel)
+                .textFieldStyle(.roundedBorder)
+            Text("Chat integration not implemented. Key and model are saved for future setup only.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            Text("Go is intended for coding-agent usage; general chat compatibility is not guaranteed.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var codexChatSettings: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Authentication").font(.subheadline)
+            Button("Sign in with ChatGPT") {}
+                .buttonStyle(.bordered)
+                .disabled(true)
+            Text("Local authentication integration not implemented. Sign-in is unavailable.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+
+            Divider().padding(.vertical, 2)
+            Text("Model").font(.subheadline)
+            Text("Model selection is unavailable until local Codex integration is implemented.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            Text("Chat integration not implemented.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+    }
+
     // Bindings in minutes for the absence field
     private var absenceMinutes: Binding<Double> {
         Binding(
@@ -67,51 +155,27 @@ struct SettingsView: View {
                 // MARK: Chat
                 GroupBox("Chat") {
                     VStack(alignment: .leading, spacing: 8) {
-                        Picker("Provider", selection: Binding(
-                            get: { state.chatSelection.providerID.rawValue },
-                            set: { state.selectChatProvider($0) }
-                        )) {
-                            ForEach(ChatProviderCatalog.providers) { provider in
-                                Text(provider.label).tag(provider.id.rawValue)
+                        Text("Active chat provider: \(state.chatSelection.provider.label)")
+                            .font(.headline)
+                        Picker("Configure provider", selection: $setupProvider) {
+                            ForEach(ChatProviderCatalog.setupProviders) { provider in
+                                Text(provider.label).tag(provider.id)
                             }
                         }
-                        Text("Only Anthropic is available. Other chat providers are not implemented yet.")
+                        .pickerStyle(.segmented)
+                        Text("Browsing setup does not change active chat or its history.")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
-
-                        SecureField("Anthropic API key (sk-ant-…)", text: $apiKey)
-                            .textFieldStyle(.roundedBorder)
-                        Button("Save") {
-                            KeychainStore.shared.set("anthropic-api-key", value: apiKey)
-                            statusMessage = "✓ Key saved."
-                        }
-                        .buttonStyle(.borderedProminent)
 
                         Divider().padding(.vertical, 2)
-
-                        Picker("Model", selection: $modelChoice) {
-                            ForEach(displayModels, id: \.id) { preset in
-                                Text(preset.label).tag(preset.id)
-                            }
-                            Text("Custom…").tag(Self.customModelTag)
+                        switch setupProvider {
+                        case .anthropic:
+                            anthropicChatSettings
+                        case .opencodeGo:
+                            opencodeGoChatSettings
+                        case .codex:
+                            codexChatSettings
                         }
-                        .onChange(of: modelChoice) { _, choice in
-                            if choice != Self.customModelTag {
-                                state.claudeModel = choice
-                            } else {
-                                applyCustomModel(customModel)
-                            }
-                        }
-
-                        if modelChoice == Self.customModelTag {
-                            TextField("Model ID (e.g. claude-sonnet-4-6)", text: $customModel)
-                                .textFieldStyle(.roundedBorder)
-                                .onChange(of: customModel) { _, value in applyCustomModel(value) }
-                        }
-
-                        Text("Used by the chat. The list comes from your Anthropic account.")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
                     }
                     .padding(6)
                 }
