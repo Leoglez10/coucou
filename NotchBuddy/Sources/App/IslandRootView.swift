@@ -396,9 +396,13 @@ struct CountdownBar: View {
         .onDisappear { timer?.invalidate() }
     }
 
+    @MainActor
     private func startTimer() {
+        // Scheduled on the main run loop; keep updates synchronous with invalidation.
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            updateBar()
+            MainActor.assumeIsolated {
+                updateBar()
+            }
         }
     }
 

@@ -195,7 +195,10 @@ final class IslandWindowController: NSWindowController {
         NotificationCenter.default.addObserver(
             forName: .greetComplete, object: nil, queue: .main
         ) { [weak self] _ in
-            self?.fsm.greetComplete()
+            // queue: .main guarantees main-actor execution without deferring the event.
+            MainActor.assumeIsolated {
+                self?.fsm.greetComplete()
+            }
         }
     }
 
@@ -375,25 +378,34 @@ final class IslandWindowController: NSWindowController {
         }
 
         // Hook server expand requests (alerts only)
+        // These observers deliver on .main; synchronous isolation preserves event order.
         NotificationCenter.default.addObserver(forName: .hookExpand, object: nil, queue: .main) { [weak self] note in
-            guard let self, let view = note.object as? IslandView else { return }
-            self.expand(to: view)
+            guard let view = note.object as? IslandView else { return }
+            MainActor.assumeIsolated {
+                self?.expand(to: view)
+            }
         }
 
         // Hook server compact reveal (non-alert work events: session start, tool use, etc.)
         NotificationCenter.default.addObserver(forName: .hookReveal, object: nil, queue: .main) { [weak self] _ in
-            guard let self else { return }
-            self.fsm.reveal()
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.fsm.reveal()
+            }
         }
 
         // Collapse requests from views (OK button, etc.)
         NotificationCenter.default.addObserver(forName: .islandCollapse, object: nil, queue: .main) { [weak self] _ in
-            self?.collapse()
+            MainActor.assumeIsolated {
+                self?.collapse()
+            }
         }
 
         // .botDizzy — posted by BotEngine.slap() on 3rd hit; show confused view + recover after 3.3s
         NotificationCenter.default.addObserver(forName: .botDizzy, object: nil, queue: .main) { [weak self] _ in
-            self?.handleDizzy()
+            MainActor.assumeIsolated {
+                self?.handleDizzy()
+            }
         }
 
         // Window attach drag.
@@ -492,10 +504,11 @@ final class IslandWindowController: NSWindowController {
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil, queue: .main
         ) { [weak self] note in
-            guard let self else { return }
-            if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-               app.bundleIdentifier != ourBundle {
-                self.state.lastExternalApp = app
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier != ourBundle else { return }
+            // Keep workspace activation tracking synchronous on the requested .main queue.
+            MainActor.assumeIsolated {
+                self?.state.lastExternalApp = app
             }
         }
     }
@@ -576,7 +589,10 @@ final class IslandWindowController: NSWindowController {
                     ctx.duration = 0.12
                     ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
                     captured.animator().alphaValue = 0
-                }, completionHandler: { captured.close() })
+                }, completionHandler: {
+                    // Only the retired panel is captured; no live highlight state is deferred.
+                    DispatchQueue.main.async { captured.close() }
+                })
             }
             return
         }

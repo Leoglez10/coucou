@@ -125,7 +125,7 @@ struct OverviewView: View {
         case "integration_claude":
             let vscodeBundleId = "com.microsoft.VSCode"
             if let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == vscodeBundleId }) {
-                app.activate(options: .activateIgnoringOtherApps)
+                app.activate(options: [])
             } else {
                 NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Visual Studio Code.app"))
             }
@@ -158,7 +158,7 @@ struct OverviewView: View {
                 if let hit = terminalBundleIds.compactMap({ id in
                     NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == id }
                 }).first {
-                    hit.activate(options: .activateIgnoringOtherApps)
+                    hit.activate(options: [])
                 }
                 #endif
             }
@@ -298,7 +298,7 @@ struct FinishedView: View {
                         let terminalBundleIds = ["com.apple.Terminal", "com.googlecode.iterm2", "net.kovidgoyal.kitty", "com.mitchellh.ghostty"]
                         let activated = terminalBundleIds.compactMap { id in
                             NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == id }
-                        }.first.map { $0.activate(options: .activateIgnoringOtherApps) }
+                        }.first.map { $0.activate(options: []) }
                         if activated == nil {
                             NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"))
                         }
@@ -393,12 +393,16 @@ struct UploadView: View {
         .onDisappear { stopTimer() }
     }
 
+    @MainActor
     private func startTimer() {
         guard animTimer == nil else { return }
         // 20 fps — smooth enough for slow dash, 3× lighter than 60fps
+        // Main-run-loop delivery stays synchronous, so stopTimer leaves no queued updates.
         animTimer = Timer.scheduledTimer(withTimeInterval: 1.0/20.0, repeats: true) { _ in
-            dashPhase  += 1.0          // 20 pt/s march
-            breathAngle += 0.9 / 20.0  // advance sin phase at 0.9 rad/s
+            MainActor.assumeIsolated {
+                dashPhase  += 1.0          // 20 pt/s march
+                breathAngle += 0.9 / 20.0  // advance sin phase at 0.9 rad/s
+            }
         }
     }
 
@@ -1234,7 +1238,7 @@ struct IntegrationCardView: View {
         if let running = ids.compactMap({ id in
             NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == id }
         }).first {
-            running.activate(options: .activateIgnoringOtherApps)
+            running.activate(options: [])
             return
         }
         if let appURL = appURL {

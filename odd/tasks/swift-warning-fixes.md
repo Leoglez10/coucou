@@ -1,0 +1,27 @@
+# Swift warning fixes
+
+## Objective, problem and authorization
+User provided an Xcode warning screenshot and explicitly authorized fixing the causes. Remove confirmed Swift concurrency, deprecated activation and immutable-variable warnings without suppressing diagnostics or changing island behavior.
+
+## Scope and constraints
+Target GreetingCanvasView, IslandRootView, IslandViewContent, IslandWindowController, IslandStateMachine and AppDelegate, plus a focused warning-regression script if needed. Actual compiler diagnostics determine edits; source mapping alone is not proof. Preserve auto-close, provider UI, timer cancellation, observer/event ordering and animation lifecycle. Do not rewrite local event monitors or add unchecked isolation without an actual relevant diagnostic and documented main-thread guarantees. No new provider transports, credentials, app launch, remote execution, settings changes or installs. No manual generated project edits. Preserve ambient `.gitignore`, `.codegraph/`, untracked shared schemes. Current branch `performance`, base `069cea6c48c43c5d6059cba4c73c672e28d692b6`.
+
+## Tasks
+- [x] SW-01: Capture baseline warnings (RED), correct only confirmed warning sites, and verify regression checks and build (GREEN).
+  - Route: delegated direct, one writer. Trigger: preparation and six potential non-trivial source files.
+  - Acceptance: targeted diagnostics absent in a clean Debug compile; no suppression flags or unsafe concurrency shortcuts; existing tests pass; no deferred callbacks execute after their cancellation due to newly introduced actor hops.
+  - Strict TDD: enabled by `/Users/leoglez/AGENTS.md`. Existing standalone Swift harness retained. Warning regression gate: compiler output filtered to target source diagnostics. Observe actual failing gate before production edits; if warnings cannot be reproduced report the gap, never invent RED.
+  - Checks: warning gate/full Debug build with signing disabled; `bash scripts/test-chat-provider-selection.sh`; `bash scripts/test-screen-geometry.sh`; `bash scripts/test-safe-links.sh`; `git diff --check`. Do not apply global warnings-as-errors to unrelated diagnostics.
+  - Runtime: native compile and static lifecycle review; actual UI focus/animation/timing not tested without separate authorized local interaction. Report limitations.
+  - Rollback: revert this work unit's exact hunks and optional regression script, not whole shared files or user changes.
+  - Commit/review: implementation and independent checks complete; native inspection unavailable (`package-local-binary-missing`), no lineage or mutation. No native approval claimed; work-unit commit records this snapshot, identity in recovery memory. No push/PR/merge.
+
+## Checking and delivery
+Forecast 40–90 source diff lines plus focused script/tests; approximate only. Strategy ask-on-risk; do not compress code to fit budgets. RDD globally on; do not toggle. Prior native assess had untracked-scope failure and consent expired; do not reuse old bindings. New native review needs a fresh candidate if applicable. Logs/DerivedData go under explicitly selected temporary build output directories; ordinary Xcode cache and execution-policy/LaunchServices registrations acknowledged. No OS cleanup/probing.
+
+## Progress and next step
+Writer reproduced RED: clean build succeeded, warning gate failed on 16 diagnostics (11 concurrency, 4 deprecated activation, 1 never-mutated). An intermediate build exited 65 for transfer of untyped `Notification`; extracting typed payloads corrected it. Final writer and independent clean builds passed with zero targeted warnings. Selection 54 assertions, geometry 13 cases, safe links 15 cases and diff check all passed. Independent build log: `/tmp/coucou-swift-warning-fixes.NSpSu1/build.log`. Candidate hashes unchanged after checks. Changed four Swift files and one script: 103 additions/20 deletions, 123 authored lines before this task-document update. AppDelegate, state machine work items, local event monitors, auto-close and provider settings were not modified.
+
+Static isolation proof combines @MainActor timer creation/current-run-loop delivery, `.main` observer guarantees, synchronous nonescaping assertions, and official Swift runtime bridge source: https://github.com/swiftlang/swift/blob/swift-6.0-RELEASE/stdlib/public/Concurrency/Actor.cpp (`swift_task_isCurrentExecutorImpl` accepts the main thread for the main executor outside concurrency). Current upstream confirms this design, not exact installed Apple Swift 6.4 binary correspondence. The independent verifier supports the specific callbacks; no new candidate-caused fix identified. Timers/observers remain synchronous, cancellation paths unchanged; only retired-panel closure is dispatched. No app launch, runtime assertion, visual focus, timing, leak or hidden-CPU test performed.
+
+Residual warnings: unchanged `SettingsView.swift:660` n8n actor warning and AppIntents metadata/destination notices. Scope is the 16 reproduced target diagnostics, not every warning in the app. Roll back exact work-unit hunks only. Native inspection returned `package-local-binary-missing`, no lineage/mutation and incomplete inventory. No install, environment change, retry, review approval or mode toggle was attempted. Independent checks are the verification evidence. Commit identity will be recorded in the recovery observation; next functional work remains outside this warning unit.
