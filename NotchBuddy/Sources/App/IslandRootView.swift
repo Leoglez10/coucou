@@ -403,19 +403,14 @@ struct CountdownBar: View {
     }
 
     private func updateBar() {
-        guard state.mode == .expanded && !state.isPinned else {
+        // Counts down from the moment the mouse leaves the expanded island.
+        guard state.mode == .expanded && !state.isPinned, let leftAt = state.mouseLeftAt else {
             barWidth = 0
             return
         }
-        let autoClose = state.autoCloseInterval
-        let window = min(10.0, autoClose * 0.6)
-        let elapsed = Date.now.timeIntervalSince(state.lastActivity)
-        let remaining = autoClose - elapsed
-        if remaining < window {
-            barWidth = max(0, CGFloat(remaining / window) * 160)
-        } else {
-            barWidth = 0
-        }
+        let autoClose = max(0.3, state.autoCloseInterval)
+        let remaining = autoClose - Date.now.timeIntervalSince(leftAt)
+        barWidth = max(0, CGFloat(remaining / autoClose) * 160)
     }
 }
 

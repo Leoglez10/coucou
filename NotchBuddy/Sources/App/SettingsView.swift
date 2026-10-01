@@ -292,7 +292,7 @@ struct SettingsView: View {
                             TextField("60", value: $state.autoCloseInterval, format: .number)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 64)
-                            Text("s inactive")
+                            Text("s after leaving")
                         }
                         HStack(spacing: 8) {
                             Text("Hide after")

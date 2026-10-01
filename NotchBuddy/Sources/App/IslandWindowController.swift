@@ -15,6 +15,7 @@ final class IslandWindowController: NSWindowController {
     private var frameTimer: Timer?
     private var keyMonitor: Any?
     private var viewSubscription: AnyCancellable?
+    private var closeDelaySubscription: AnyCancellable?
 
     // Confused recovery timer (set by handleDizzy)
     private var confusedRecoveryTimer: DispatchWorkItem?
@@ -153,6 +154,10 @@ final class IslandWindowController: NSWindowController {
     // MARK: - FSM wiring
 
     private func wireFSM() {
+        // "Close after" setting = delay after the mouse leaves the expanded island.
+        closeDelaySubscription = state.$autoCloseInterval.sink { [weak self] v in
+            self?.fsm.homeToPetitDelay = max(0.3, v)
+        }
         fsm.onTransition = { [weak self] from, to in
             guard let self else { return }
             switch to {
@@ -177,6 +182,7 @@ final class IslandWindowController: NSWindowController {
                 self.expand(to: self.defaultView())
                 // Start collapse timer if mouse not currently hovering
                 if !self.wasInIsland {
+                    self.state.mouseLeftAt = .now
                     self.fsm.mouseLeft()
                 }
 
@@ -247,9 +253,11 @@ final class IslandWindowController: NSWindowController {
             if fsm.state == .coucou {
                 NotificationCenter.default.post(name: .greetingHover, object: nil)
             }
+            state.mouseLeftAt = nil
             fsm.mouseEntered()
         }
         if !inIsland && wasInIsland {
+            state.mouseLeftAt = .now
             fsm.mouseLeft()
         }
         wasInIsland = inIsland

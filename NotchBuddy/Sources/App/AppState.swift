@@ -54,6 +54,8 @@ final class AppState: ObservableObject {
     var mousePosition: CGPoint = .zero
     var lastMouseMove: Date = .now
     var lastActivity: Date = .now
+    /// When the mouse left the expanded island (nil while hovering). Drives the close countdown bar.
+    var mouseLeftAt: Date? = nil
     var isPresent: Bool = true
 
     // Pinned (alerts that stay open, never auto-close)
@@ -98,7 +100,7 @@ final class AppState: ObservableObject {
     @Published var noteMessage: String? = nil
 
     // Auto-close delay — persisted
-    @Published var autoCloseInterval: TimeInterval = 15 {
+    @Published var autoCloseInterval: TimeInterval = 1 {
         didSet { UserDefaults.standard.set(autoCloseInterval, forKey: "autoCloseInterval") }
     }
 
