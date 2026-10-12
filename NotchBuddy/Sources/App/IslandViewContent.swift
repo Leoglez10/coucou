@@ -1568,6 +1568,7 @@ struct ModelPickerView: View {
                             case .openai:    state.openAIChatModel = model.id
                             case .ollama:    state.ollamaChatModel = model.id
                             case .lmstudio:  state.lmstudioChatModel = model.id
+                            case .opencodeGo: state.opencodeGoChatModel = model.id
                             }
                             isPresented = false
                             SoundEngine.shared.play("blip")
