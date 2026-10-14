@@ -52,6 +52,12 @@ struct ApprovalInfo: Sendable {
     var inputKey: String
     /// Pill that owns this approval: "integration_claude", "agent_cursor", or "agent_codex".
     var pillId: String
+    /// Queued request this card answers (Mac): a decision is only accepted for this id.
+    var id: UUID = UUID()
+    /// Requests waiting, this one included; the card shows the count when above 1.
+    var queueCount: Int = 1
+    /// Project of the session that asks (several sessions can share one pill).
+    var projectName: String = ""
 }
 
 // MARK: - Pill badge (shown on pill edge when non-focused task has an alert)
@@ -93,6 +99,9 @@ enum ChatProvider: String, CaseIterable, Codable {
     case ollama    = "ollama"
     case lmstudio  = "lmstudio"
     case opencodeGo = "opencode-go"
+    case deepseek  = "deepseek"
+    case qwen      = "qwen"
+    case moonshot  = "moonshot"
 
     var displayName: String {
         switch self {
@@ -102,6 +111,9 @@ enum ChatProvider: String, CaseIterable, Codable {
         case .ollama:    "Ollama"
         case .lmstudio:  "LM Studio"
         case .opencodeGo: "OpenCode Go"
+        case .deepseek:  "DeepSeek"
+        case .qwen:      "Qwen"
+        case .moonshot:  "Moonshot"
         }
     }
 
@@ -113,6 +125,9 @@ enum ChatProvider: String, CaseIterable, Codable {
         case .ollama:    "#FACC15"
         case .lmstudio:  "#A3E635"
         case .opencodeGo: "#38BDF8"
+        case .deepseek:  "#5B8FF9"
+        case .qwen:      "#FF6A00"
+        case .moonshot:  "#7C5CFC"
         }
     }
 
@@ -124,6 +139,9 @@ enum ChatProvider: String, CaseIterable, Codable {
         case .ollama:    "llama3.2"
         case .lmstudio:  "local-model"
         case .opencodeGo: "kimi-k3"
+        case .deepseek:  "deepseek-chat"
+        case .qwen:      "qwen-max"
+        case .moonshot:  "moonshot-v1-32k"
         }
     }
 
@@ -135,6 +153,9 @@ enum ChatProvider: String, CaseIterable, Codable {
         case .ollama:    ""
         case .lmstudio:  ""
         case .opencodeGo: "opencode-go-api-key"
+        case .deepseek:  "deepseek-api-key"
+        case .qwen:      "qwen-api-key"
+        case .moonshot:  "moonshot-api-key"
         }
     }
 
@@ -150,6 +171,9 @@ enum ChatProvider: String, CaseIterable, Codable {
         case .ollama:    "ai_ollama"
         case .lmstudio:  "ai_lmstudio"
         case .opencodeGo: "ai_opencode-go"
+        case .deepseek:  "ai_deepseek"
+        case .qwen:      "ai_qwen"
+        case .moonshot:  "ai_moonshot"
         }
     }
 
@@ -161,6 +185,9 @@ enum ChatProvider: String, CaseIterable, Codable {
         case "ai_ollama":    self = .ollama
         case "ai_lmstudio":  self = .lmstudio
         case "ai_opencode-go": self = .opencodeGo
+        case "ai_deepseek":  self = .deepseek
+        case "ai_qwen":      self = .qwen
+        case "ai_moonshot":  self = .moonshot
         default:             return nil
         }
     }
